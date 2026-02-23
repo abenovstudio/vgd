@@ -44,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pavlodar-csv
-          path: ${{ github.event.inputs.output_file }}
+          path: ${{ github.event.inputs.output_file || 'vgd_list.csv' }}
           if-no-files-found: error
