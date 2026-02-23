@@ -53,30 +53,18 @@ def parse_records(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
     records = []
 
-    # Ищем все блоки сообщений (каждый пост содержит таблицу данных)
-    # Данные идут после строки-заголовка "USER_LAST_NAME USER_NAME USER_TITLE DATE_B NAME_SITE"
-    all_text = soup.get_text("\n")
-
-    # Находим блоки после маркера заголовка
-    marker = "USER_LAST_NAME USER_NAME USER_TITLE DATE_B NAME_SITE"
-    parts = all_text.split(marker)
-
-    for part in parts[1:]:  # пропускаем всё до первого блока
-        lines = part.strip().splitlines()
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            # Останавливаемся на следующих служебных блоках
-            if "alexalex1804" in line or "##" in line or "VGD.ru" in line:
-                break
-            records.append(parse_line(line))
+    # Форумная верстка нестабильна: извлекаем строки и фильтруем записи по дате.
+    lines = [ln.strip() for ln in soup.get_text("\n").splitlines() if ln.strip()]
+    for line in lines:
+        rec = parse_line(line)
+        if rec:
+            records.append(rec)
 
     return [r for r in records if r]
 
 
-# Паттерн для даты вида дд.мм.гг или дд.мм.гггг
-DATE_PATTERN = re.compile(r"\d{2}\.\d{2}\.\d{2,4}")
+# Паттерн для даты вида д.м.гг, дд.мм.гг, д.м.гггг и т.д.
+DATE_PATTERN = re.compile(r"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b")
 
 
 def parse_line(line: str) -> dict | None:
@@ -84,15 +72,15 @@ def parse_line(line: str) -> dict | None:
     # Ищем дату в строке
     m = DATE_PATTERN.search(line)
     if not m:
-        # Строка без даты — пропускаем (или сохраняем как есть)
-        if len(line) < 3:
-            return None
-        return {"raw": line, "last_name": "", "first_name": "", "patronymic": "",
-                "date_birth": "", "place": ""}
+        return None
 
     date_str = m.group()
     before_date = line[:m.start()].strip()
     after_date = line[m.end():].strip()
+
+    # Минимальная защита от мусора: до даты должны быть хотя бы два токена.
+    if len(before_date.split()) < 2:
+        return None
 
     # Разбиваем часть до даты на ФИО + суффикс (дд / мм / жж)
     # Формат: [ФАМИЛИЯ] [ИМЯ] [ОТЧЕСТВО] [пол] date place
