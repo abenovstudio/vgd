@@ -36,7 +36,7 @@ jobs:
 
       - name: Run parser
         env:
-          TOTAL_PAGES: ${{ github.event.inputs.total_pages || '228' }}
+          TOTAL_PAGES: ${{ github.event_name == 'push' && '1' || github.event.inputs.total_pages || '228' }}
           OUTPUT_FILE: ${{ github.event.inputs.output_file || 'vgd_list.csv' }}
         run: python vgd_pavlodar_dump.py
 
