@@ -1,0 +1,45 @@
+name: VGD Pavlodar Parser
+
+on:
+  workflow_dispatch:
+    inputs:
+      total_pages:
+        description: "How many pages to parse"
+        required: false
+        default: "228"
+      output_file:
+        description: "Output CSV filename"
+        required: false
+        default: "vgd_list.csv"
+
+jobs:
+  run-parser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run parser
+        env:
+          TOTAL_PAGES: ${{ github.event.inputs.total_pages }}
+          OUTPUT_FILE: ${{ github.event.inputs.output_file }}
+        run: python vgd_pavlodar_dump.py
+
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pavlodar-csv
+          path: ${{ github.event.inputs.output_file }}
+          if-no-files-found: error
