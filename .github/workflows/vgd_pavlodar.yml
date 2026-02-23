@@ -1,6 +1,9 @@
 name: VGD Pavlodar Parser
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       total_pages:
